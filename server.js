@@ -11,13 +11,15 @@ const assignments = [
 
 // req is request and res is response
 
-// what shows up on when someone visits the local host server
+// what shows up when someone visits the local host server
 app.get("/", (req, res) => {
   res.json({message: "enaika's server is amazing", status: "running"});
 });
 
 // what shows up when someone visits the assignments endpoint (shows all assignments)
-app.get("/assignments", (req, res) => {res.json(assignments);})
+app.get("/assignments", (req, res) => {
+    res.json(assignments);
+});
 
 // creating a new assignment
 app.post("/assignments", (req, res) => {
@@ -39,19 +41,61 @@ app.post("/assignments", (req, res) => {
   res.status(201).json(newAssignment);
 });
 
-// updating an existing assignment's completed status
-app.put("/assignments/:id", (req, res) => {
-    // have to use parseInt bc req.params.id is a string
+// returns the assignment with a specific id number
+app.get("/assignments/:id", (req, res) => {
+  const id = parseInt(req.params.id);
+  const assignment = assignments.find(a => a.id === id);
+
+  if(!assignment){
+    return res.status(404).json({"error": "assignment not found"});
+  }
+
+  res.json(assignment);
+})
+
+// updates specific fields rather than updating the entire assignment
+app.patch("/assignments/:id", (req, res) => {
     const id = parseInt(req.params.id);
-    const assignment = assignments.find( a => a.id === id );
+    const assignment = assignments.find(a => a.id === id);
 
     if(!assignment){
-        // not found status code 404
+      return res.status(404).json({"error": "assignment not found"});
+    }
+
+    const { title, completed } = req.body;
+
+    if(title === undefined && completed === undefined){
+      return res.status(400).json({"error": "nothing to update"});
+    }
+
+    if(title !== undefined){
+      if(typeof title !== "string" || title.trim() === ""){
+        return res.status(400).json({"error": "title must be a non-empty string"});
+      }
+      assignment.title = title.trim();
+    }
+
+    if(completed !== undefined){
+      if(typeof completed !== "boolean"){
+        return res.status(400).json({"error": "completed must be a boolean"});
+      }
+      assignment.completed = completed;
+    }
+    res.json(assignment);
+});
+
+// deletes a specific assignment from the assignments array and returns the deleted assignment
+app.delete("/assignments/:id", (req, res) => {
+    const id = parseInt(req.params.id);
+    const index = assignments.findIndex(a => a.id === id);
+
+    if(index === -1){
         return res.status(404).json({"error": "assignment not found"});
     }
-    // update the completed status and returning the updated assignment
-    assignment.completed = req.body.completed;
-    res.json(assignment);
+    const deletedAssignment = assignments.splice(index, 1)[0];
+
+    res.json(deletedAssignment);
+
 });
 
 // what shows up in the terminal when the server is running
