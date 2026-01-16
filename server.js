@@ -3,11 +3,37 @@ const express = require("express");
 const app = express();
 app.use(express.json());
 
+// cors needed to allow requests from different origins
+const cors = require("cors");
+app.use(cors());
+
+// needed to read and write data to a file
+const fs = require("fs");
+const path = require("path");
+
+// path to the datafile
+const DATA_PATH = path.join(__dirname, "data", "assignments.json");
+
+// function to load assignments from the data file
+function loadAssignments() {
+  try {
+    const raw = fs.readFileSync(DATA_PATH, "utf-8");
+    return JSON.parse(raw);
+  } catch (err) {
+    return [];
+  }
+}
+// function to save assignments to the data file
+function saveAssignments(assignments) {
+  fs.mkdirSync(path.dirname(DATA_PATH), { recursive: true });
+  fs.writeFileSync(DATA_PATH, JSON.stringify(assignments, null, 2));
+}
+
+
 // sample data for assignments
-const assignments = [
-  { id: 1, title: "CS assignment", completed: false },
-  { id: 2, title: "Math problem set", completed: true }
-];
+let assignments = loadAssignments();
+
+let nextId = assignments.reduce((max, a) => Math.max(max, a.id), 0) + 1;
 
 // req is request and res is response
 
@@ -31,12 +57,13 @@ app.post("/assignments", (req, res) => {
     }
 
   const newAssignment = {
-    id: assignments.length + 1,
+    id: nextId++,
     title: title,
     completed: false
   };
 
   assignments.push(newAssignment);
+  saveAssignments(assignments);
   // http status code 201 means created
   res.status(201).json(newAssignment);
 });
@@ -81,6 +108,7 @@ app.patch("/assignments/:id", (req, res) => {
       }
       assignment.completed = completed;
     }
+    saveAssignments(assignments);
     res.json(assignment);
 });
 
@@ -93,7 +121,7 @@ app.delete("/assignments/:id", (req, res) => {
         return res.status(404).json({"error": "assignment not found"});
     }
     const deletedAssignment = assignments.splice(index, 1)[0];
-
+    saveAssignments(assignments);
     res.json(deletedAssignment);
 
 });

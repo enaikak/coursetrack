@@ -1,0 +1,4 @@
+[
+  { "id": 1, "title": "CS assignment", "completed": false },
+  { "id": 2, "title": "Math problem set", "completed": true }
+]
